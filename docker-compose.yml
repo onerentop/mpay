@@ -1,0 +1,136 @@
+# MPay Docker Compose Configuration
+# 码支付系统 - Docker 部署配置
+
+services:
+  # MPay Application
+  mpay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mpay-app
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - APP_DEBUG=${APP_DEBUG:-false}
+      - DB_TYPE=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-mpay}
+      - DB_USER=${DB_USER:-mpay}
+      - DB_PASS=${DB_PASS:-mpay123456}
+      - DB_PREFIX=${DB_PREFIX:-mpay_}
+      - DB_CHARSET=utf8mb4
+    volumes:
+      # Persist .env config file (IMPORTANT!)
+      - mpay_env:/var/www/html/env
+      # Persist runtime data
+      - mpay_runtime:/var/www/html/runtime
+      # Persist uploaded files
+      - mpay_files:/var/www/html/public/files
+      # Persist plugin configurations
+      - mpay_config:/var/www/html/config/extend
+      # Persist plugins
+      - mpay_plugins:/var/www/html/extend/payclient
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - mpay-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: mpay-mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=${DB_NAME:-mpay}
+      - MYSQL_USER=${DB_USER:-mpay}
+      - MYSQL_PASSWORD=${DB_PASS:-mpay123456}
+      - TZ=Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mpay_mysql:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max_connections=500
+      - --innodb_buffer_pool_size=256M
+    networks:
+      - mpay-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # phpMyAdmin (optional, for database management)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: mpay-phpmyadmin
+    restart: unless-stopped
+    profiles:
+      - tools
+    ports:
+      - "${PMA_PORT:-8081}:80"
+    environment:
+      - PMA_HOST=mysql
+      - PMA_USER=${DB_USER:-mpay}
+      - PMA_PASSWORD=${DB_PASS:-mpay123456}
+      - UPLOAD_LIMIT=50M
+    depends_on:
+      - mysql
+    networks:
+      - mpay-network
+
+  # Redis (optional, for caching)
+  redis:
+    image: redis:7-alpine
+    container_name: mpay-redis
+    restart: unless-stopped
+    profiles:
+      - cache
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - mpay_redis:/data
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    networks:
+      - mpay-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  mpay-network:
+    driver: bridge
+
+volumes:
+  mpay_env:
+    name: mpay_env
+  mpay_runtime:
+    name: mpay_runtime
+  mpay_files:
+    name: mpay_files
+  mpay_config:
+    name: mpay_config
+  mpay_plugins:
+    name: mpay_plugins
+  mpay_mysql:
+    name: mpay_mysql
+  mpay_redis:
+    name: mpay_redis

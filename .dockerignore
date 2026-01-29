@@ -1,0 +1,29 @@
+# Docker build artifacts
+docker/mysql/data/
+
+# Runtime files (will be mounted as volumes)
+runtime/
+public/files/uploads/
+
+# Environment file (contains secrets)
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Composer
+vendor/
+
+# Build artifacts
+*.tar
+*.tar.gz
