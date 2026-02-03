@@ -67,14 +67,16 @@ class PayController
                 $passtime = strtotime($act_order->close_time) - time();
                 View::assign('passtime', $passtime > 0 ? $passtime : 0);
                 // Alipay免输
-                if (preg_match('/^alipay4#\d+$/', $channel->channel)) {
+                if (preg_match('/^alipay4#(\d+)$/', $channel->channel, $matches)) {
+                    // 从 channel 字段提取支付宝 PID
+                    $alipay_pid = $matches[1];
                     $chan = request()->get('chan', '');
                     if ($chan && $chan == 'Alipayf') {
-                        $payurl = \payclient\AliPayf::getPayUrl($act_order->order_id, $act_order->money, $channel->qrcode, 1);
+                        $payurl = \payclient\AliPayf::getPayUrl($act_order->order_id, $act_order->money, $alipay_pid, 1);
                         View::assign('payUrl', $payurl['data'] ?? $payurl['msg']);
                         View::assign('payclient', 'Alipayf');
                     } else {
-                        $payurl = \payclient\AliPayf::getPayUrl($act_order->order_id, $act_order->money, $channel->qrcode);
+                        $payurl = \payclient\AliPayf::getPayUrl($act_order->order_id, $act_order->money, $alipay_pid);
                     }
                     View::assign('payUrl', $payurl['data'] ?? $payurl['msg']);
                 } else {

@@ -212,13 +212,25 @@
             }
             // 生成二维码
             if (codeType == 0) {
-                if (payType === 'alipay' && environment === 'pc') {
+                // 判断是否是支付宝免输（payCode 以 render.alipay.com 开头）
+                const isAlipayf = payCode.includes('render.alipay.com');
+                if (isAlipayf && payType === 'alipay') {
+                    // 支付宝免输：二维码内容为收银台页面URL（带chan=Alipayf参数）
+                    // 用户用支付宝扫码后，在支付宝内打开此页面，自动跳转到转账
+                    const consoleUrl = window.location.origin + '/Pay/console/' + order + '?chan=Alipayf';
+                    document.getElementById('qrcode').src = await getQrcode(consoleUrl, QR);
+                } else if (payType === 'alipay' && environment === 'pc') {
                     // 解析网址
                     const url = new URL(payCode);
                     const queryParams = new URLSearchParams(url.search);
                     const qrcode = queryParams.get('qrcode');
-                    const decodedQrcode = decodeURIComponent(qrcode);
-                    document.getElementById('qrcode').src = await getQrcode(decodedQrcode, QR);
+                    // 如果有 qrcode 参数则解析，否则直接使用 payCode
+                    if (qrcode) {
+                        const decodedQrcode = decodeURIComponent(qrcode);
+                        document.getElementById('qrcode').src = await getQrcode(decodedQrcode, QR);
+                    } else {
+                        document.getElementById('qrcode').src = await getQrcode(payCode, QR);
+                    }
                 } else {
                     document.getElementById('qrcode').src = await getQrcode(payCode, QR);
                 }

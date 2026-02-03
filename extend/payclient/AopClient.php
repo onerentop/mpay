@@ -1,10 +1,17 @@
 <?php
 
-require_once 'AopEncrypt.php';
-require_once 'EncryptParseItem.php';
-require_once 'EncryptResponseData.php';
-require_once 'SignData.php';
-require_once 'AlipayConfig.php';
+namespace payclient;
+
+if (class_exists('payclient\AopClient', false)) {
+    return;
+}
+
+require_once __DIR__ . '/AopEncrypt.php';
+require_once __DIR__ . '/EncryptParseItem.php';
+require_once __DIR__ . '/EncryptResponseData.php';
+require_once __DIR__ . '/SignData.php';
+require_once __DIR__ . '/AlipayConfig.php';
+
 class AopClient
 {
     //应用ID
