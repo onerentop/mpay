@@ -2,6 +2,9 @@
 *.env
 
 extend/*
+!extend/payclient/
+!extend/Plugin.php
+!extend/ImgCaptcha.php
 
 vendor/*
 !vendor/vendor.zip
