@@ -298,6 +298,10 @@ class PayController
     public function mpayNotify(Request $request)
     {
         $info = $request->post();
+        // 调试日志 - 记录收到的请求
+        $debugLog = date('Y-m-d H:i:s') . " mpayNotify received:\n" . json_encode($info, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . "\n\n";
+        file_put_contents(runtime_path() . 'mpay_debug.log', $debugLog, FILE_APPEND);
+
         $action = isset($info['action']) ? $info['action'] : '';
         if ($action !== 'mpay' && $action !== 'mpaypc') return '非mpay的访问请求';
         $data = json_decode($info['data'], true);
